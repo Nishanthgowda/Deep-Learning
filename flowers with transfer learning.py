@@ -14,15 +14,16 @@ logger.setLevel(logging.ERROR)
 
 """# TODO: Download the Flowers Dataset using TensorFlow Datasets
 
-In the cell below you will download the Flowers dataset using TensorFlow Datasets. If you look at the [TensorFlow Datasets documentation](https://www.tensorflow.org/datasets/datasets#tf_flowers) you will see that the name of the Flowers dataset is `tf_flowers`. You can also see that this dataset is only split into a TRAINING set. You will therefore have to use `tfds.splits` to split this training set into to a `training_set` and a `validation_set`. Do a `[70, 30]` split such that 70 corresponds to the `training_set` and 30 to the `validation_set`. Then load the `tf_flowers` dataset using `tfds.load`. Make sure the `tfds.load` function uses the all the parameters you need, and also make sure it returns the dataset info, so we can retrieve information about the datasets.
+In the cell below you will download the Flowers dataset using TensorFlow Datasets.
+If you look at the [TensorFlow Datasets documentation](https://www.tensorflow.org/datasets/datasets#tf_flowers)
+you will see that the name of the Flowers dataset is `tf_flowers`.
 """
 
 splits = (['train[:70%]','train[30%:]'])
 
 (training_set, validation_set), dataset_info = tfds.load('tf_flowers',with_info=True,as_supervised=True,split=splits)
 
-"""# TODO: Print Information about the Flowers Dataset
-
+"""
 Now that you have downloaded the dataset, use the dataset info to print the number of classes in the dataset, and also write some code that counts how many images we have in the training and validation sets.
 """
 
@@ -43,9 +44,11 @@ print('Total Number of Validation Images: {} \n'.format(num_validation_examples)
 for i, example in enumerate(training_set.take(5)):
   print('Image {} shape: {} label: {}'.format(i+1, example[0].shape, example[1]))
 
-"""# TODO: Reformat Images and Create Batches
+"""
 
-In the cell below create a function that reformats all images to the resolution expected by MobileNet v2 (224, 224) and normalizes them. The function should take in an `image` and a `label` as arguments and should return the new `image` and corresponding `label`. Then create training and validation batches of size `32`.
+create a function that reformats all images to the resolution expected by MobileNet v2 (224, 224) and normalizes them. 
+The function should take in an `image` and a `label` as arguments and should return the new `image` and corresponding `label`.
+Then create training and validation batches of size `32`.
 """
 
 IMAGE_RES = 224
@@ -60,19 +63,16 @@ train_batches =training_set.shuffle(num_training_examples//4).map(format_image).
 
 validation_batches = validation_set.map(format_image).batch(BATCH_SIZE).prefetch(1)
 
-"""# Do Simple Transfer Learning with TensorFlow Hub
-
-Let's now use TensorFlow Hub to do Transfer Learning. Remember, in transfer learning we reuse parts of an already trained model and change the final layer, or several layers, of the model, and then retrain those layers on our own dataset.
-
-### TODO: Create a Feature Extractor
-In the cell below create a `feature_extractor` using MobileNet v2. Remember that the partial model from TensorFlow Hub (without the final classification layer) is called a feature vector. Go to the [TensorFlow Hub documentation](https://tfhub.dev/s?module-type=image-feature-vector&q=tf2) to see a list of available feature vectors. Click on the `tf2-preview/mobilenet_v2/feature_vector`. Read the documentation and get the corresponding `URL` to get the MobileNet v2 feature vector. Finally, create a `feature_extractor` by using `hub.KerasLayer` with the correct `input_shape` parameter.
+"""
+Create a Feature Extractor
+create a `feature_extractor` using MobileNet v2. Remember that the partial model from TensorFlow Hub (without the final classification layers)
 """
 
 URL = "https://tfhub.dev/google/tf2-preview/mobilenet_v2/feature_vector/4"
 feature_extractor = hub.KerasLayer(URL,input_shape=(IMAGE_RES,IMAGE_RES,3))
 
-"""### TODO: Freeze the Pre-Trained Model
-
+"""
+Freeze the Pre-Trained Model
 In the cell below freeze the variables in the feature extractor layer, so that the training only modifies the final classifier layer.
 """
 
@@ -89,9 +89,8 @@ model = tf.keras.Sequential([
 ])
 model.summary()
 
-"""### TODO: Train the model
-
-In the cell bellow train this model like any other, by first calling `compile` and then followed by `fit`. Make sure you use the proper parameters when applying both methods. Train the model for only 6 epochs.
+"""
+we train this model like any other, by first calling `compile` and then followed by `fit`. Make sure you use the proper parameters when applying both methods. Train the model for only 6 epochs.
 """
 
 model.compile(
@@ -105,11 +104,8 @@ history = model.fit(train_batches,
                     epochs=EPOCHS,
                     validation_data=validation_batches)
 
-"""You can see we get ~88% validation accuracy with only 6 epochs of training, which is absolutely awesome. This is a huge improvement over the model we created in the previous lesson, where we were able to get ~76% accuracy with 80 epochs of training. The reason for this difference is that MobileNet v2 was carefully designed over a long time by experts, then trained on a massive dataset (ImageNet).
-
-# TODO: Plot Training and Validation Graphs
-
-In the cell below, plot the training and validation accuracy/loss graphs.
+"""
+we plot the training and validation accuracy/loss graphs.
 """
 
 acc = history.history['accuracy']
@@ -134,23 +130,15 @@ plt.legend(loc='upper right')
 plt.title('Training and Validation Loss')
 plt.show()
 
-"""What is a bit curious here is that validation performance is better than training performance, right from the start to the end of execution.
 
-One reason for this is that validation performance is measured at the end of the epoch, but training performance is the average values across the epoch.
-
-The bigger reason though is that we're reusing a large part of MobileNet which is already trained on Flower images.
-
-# TODO: Check Predictions
-
-In the cell below get the label names from the dataset info and convert them into a NumPy array. Print the array to make sure you have the correct label names.
-"""
 
 class_names = np.array(dataset_info.features['label'].names)
 class_names
 
-"""### TODO: Create an Image Batch and Make Predictions
-
-In the cell below, use the `next()` function to create an `image_batch` and its corresponding `label_batch`. Convert both the `image_batch` and `label_batch` to numpy arrays using the `.numpy()` method. Then use the `.predict()` method to run the image batch through your model and make predictions. Then use the `np.argmax()` function to get the indices of the best prediction for each image. Finally convert the indices of the best predictions to class names.
+"""
+we use the `next()` function to create an `image_batch` and its corresponding `label_batch`. Convert both the `image_batch` and `label_batch` to numpy arrays using the `.numpy()` method. 
+Then use the `.predict()` method to run the image batch through your model and make predictions. Then use the `np.argmax()` function to get the indices of the best prediction for each image.
+Finally convert the indices of the best predictions to class names.
 """
 
 image_batch, label_batch = next(iter(train_batches))
@@ -185,10 +173,3 @@ for n in range(30):
   plt.title(predicted_class_names[n].title(), color=color)
   plt.axis('off')
 _ = plt.suptitle("Model predictions (blue: correct, red: incorrect)")
-
-
-
-"""# TODO: Perform Transfer Learning with the Inception Model
-
-Go to the [TensorFlow Hub documentation](https://tfhub.dev/s?module-type=image-feature-vector&q=tf2) and click on `tf2-preview/inception_v3/feature_vector`. This feature vector corresponds to the Inception v3 model. In the cells below, use transfer learning to create a CNN that uses Inception v3 as the pretrained model to classify the images from the Flowers dataset. Note that Inception, takes as input, images that are 299 x 299 pixels. Compare the accuracy you get with Inception v3 to the accuracy you got with MobileNet v2.
-"""
